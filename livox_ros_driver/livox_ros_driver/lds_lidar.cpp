@@ -46,6 +46,7 @@ LdsLidar *g_lds_ldiar = nullptr;
 
 /** Lds lidar function -------------------------------------------------------*/
 LdsLidar::LdsLidar(uint32_t interval_ms) : Lds(interval_ms, kSourceRawLidar) {
+  synchro = Synchro::GetInstance();
   auto_connect_mode_ = true;
   is_initialized_ = false;
 
@@ -101,20 +102,18 @@ int LdsLidar::InitLdsLidar(std::vector<std::string> &broadcast_code_strs,
         "No broadcast code was added to whitelist, swith to automatic "
         "connection mode!\n");
   }
-
+  enable_timesync_ = true;
   if (enable_timesync_) {
-    timesync_ = TimeSync::GetInstance();
-    if (timesync_->InitTimeSync(timesync_config_)) {
-      printf("Timesync init fail\n");
+    synchro.SetPortName("/dev/ttyACM0");
+    synchro.SetBaudRate(BR9600);
+    synchro.SetParity(P_8N1);
+    synchro.SetSyncTimerCallback(ReceiveSyncTimeCallback,this);
+    if (synchro.Start()) {
+      printf("Synchro start success");
+    } else {
+      printf("Synchro start failed");
       return -1;
     }
-
-    if (timesync_->SetReceiveSyncTimeCb(ReceiveSyncTimeCallback, this)) {
-      printf("Set Timesync callback fail\n");
-      return -1;
-    }
-
-    timesync_->StartTimesync();
   }
 
   /** Start livox sdk to receive lidar data */
@@ -143,9 +142,7 @@ int LdsLidar::DeInitLdsLidar(void) {
   Uninit();
   printf("Livox SDK Deinit completely!\n");
 
-  if (timesync_) {
-    timesync_->DeInitTimeSync();
-  }
+  synchro.Stop();
 
   return 0;
 }
@@ -540,6 +537,7 @@ void LdsLidar::ReceiveSyncTimeCallback(const char *rmc, uint32_t rmc_length,
   LdsLidar *lds_lidar = static_cast<LdsLidar *>(client_data);
   // std::unique_lock<std::mutex> lock(mtx);
   LidarDevice *p_lidar = nullptr;
+  printf("\nrmc:%s",rmc);
   for (uint8_t handle = 0; handle < kMaxLidarCount; handle++) {
     p_lidar = &(lds_lidar->lidars_[handle]);
     if (p_lidar->connect_state == kConnectStateSampling &&
@@ -585,7 +583,7 @@ bool LdsLidar::IsBroadcastCodeExistInWhitelist(const char *broadcast_code) {
 
   return false;
 }
-
+/*
 int LdsLidar::ParseTimesyncConfig(rapidjson::Document &doc) {
   do {
     if (!doc.HasMember("timesync_config") || !doc["timesync_config"].IsObject())
@@ -638,9 +636,10 @@ int LdsLidar::ParseTimesyncConfig(rapidjson::Document &doc) {
   } while (0);
 
   return -1;
-}
+}*/
 
 /** Config file process */
+
 int LdsLidar::ParseConfigFile(const char *pathname) {
   FILE *raw_file = std::fopen(pathname, "rb");
   if (!raw_file) {
@@ -716,10 +715,10 @@ int LdsLidar::ParseConfigFile(const char *pathname) {
       }
     }
 
-    if (ParseTimesyncConfig(doc)) {
+    /*if (ParseTimesyncConfig(doc)) {
       printf("Parse timesync config fail\n");
       enable_timesync_ = false;
-    }
+    }*/
   } else {
     printf("User config file parse error[%d]\n",
            doc.ParseStream(config_file).HasParseError());

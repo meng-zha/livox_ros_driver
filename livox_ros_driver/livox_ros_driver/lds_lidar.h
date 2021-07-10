@@ -33,8 +33,8 @@
 
 #include "lds.h"
 #include "livox_sdk.h"
+#include "synchro.h"
 #include "rapidjson/document.h"
-#include "timesync.h"
 
 namespace livox_ros {
 
@@ -98,7 +98,7 @@ class LdsLidar : public Lds {
   void EnableAutoConnectMode(void) { auto_connect_mode_ = true; }
   void DisableAutoConnectMode(void) { auto_connect_mode_ = false; }
   bool IsAutoConnectMode(void) { return auto_connect_mode_; }
-  int ParseTimesyncConfig(rapidjson::Document &doc);
+  //int ParseTimesyncConfig(rapidjson::Document &doc);
   int ParseConfigFile(const char *pathname);
   int AddRawUserConfig(UserRawConfig &config);
   bool IsExistInRawConfig(const char *broadcast_code);
@@ -111,8 +111,7 @@ class LdsLidar : public Lds {
   std::vector<UserRawConfig> raw_config_;
 
   bool enable_timesync_;
-  TimeSync *timesync_;
-  TimeSyncConfig timesync_config_;
+  Synchro synchro;
   std::mutex config_mutex_;
 };
 
