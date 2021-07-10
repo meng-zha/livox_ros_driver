@@ -169,9 +169,12 @@ int main(int argc, char **argv) {
   }
 
   ros::Time::init();
-  while (ros::ok()) {
-    lddc->DistributeLidarData();
-  }
+  ros::Subscriber trigger = livox_node.subscribe("master_trigger", 1, lddc->TriggerAggregateLidarPointCloudData);
+  // while (ros::ok()) {
+    // lddc->DistributeLidarData();
+    // lddc->AggregateLidarData();
+  // }
+  ros::spint();
 
   return 0;
 }

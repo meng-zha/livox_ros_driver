@@ -28,6 +28,7 @@
 #include "livox_sdk.h"
 
 #include <ros/ros.h>
+#include <std_msgs/String.h>
 #include <rosbag/bag.h>
 #include <pcl_ros/point_cloud.h>
 #include <livox_ros_driver/CustomMsg.h>
@@ -52,6 +53,8 @@ class Lddc {
 
   int RegisterLds(Lds *lds);
   void DistributeLidarData(void);
+  void AggregateLidarData(void);
+  void AggregateLidarPointCloudData(void);
   void CreateBagFile(const std::string &file_name);
   void PrepareExit(void);
 
@@ -76,6 +79,10 @@ class Lddc {
                                    uint8_t handle);
   uint32_t PublishImuData(LidarDataQueue *queue, uint32_t packet_num,
                           uint8_t handle);
+
+  uint32_t PublishAggregatePointcloudData();
+  ros::Publisher *GetAggPublisher();
+  void PollingAggregateLidarPointCloudData();
 
   ros::Publisher *GetCurrentPublisher(uint8_t handle);
   ros::Publisher *GetCurrentImuPublisher(uint8_t handle);

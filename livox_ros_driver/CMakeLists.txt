@@ -166,6 +166,7 @@ target_sources(${PROJECT_NAME}_node
 	livox_ros_driver/lds_hub.cpp
 	livox_ros_driver/lddc.cpp
 	livox_ros_driver/livox_ros_driver.cpp
+	livox_ros_driver/trigger.cpp
 	timesync/timesync.cpp
 	timesync/user_uart/user_uart.cpp
 	common/comm/comm_protocol.cpp
