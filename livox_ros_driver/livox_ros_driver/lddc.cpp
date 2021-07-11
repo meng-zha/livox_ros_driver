@@ -487,24 +487,34 @@ uint32_t Lddc::PublishAggregatePointcloudData() {
   cloud->width = 0;
 
   uint64_t avg_timestamp = 0;
-  uint32_t agg_published = 0
+  uint32_t agg_published_packet = 0;
 
   uint64_t timestamp = 0;
   uint64_t last_timestamp = 0;
   uint32_t published_packet = 0;
 
+  LidarDevice *lidar;
+  LidarDataQueue *queue;
+  uint8_t point_buf[2048];
+  uint32_t is_zero_packet = 0;
+  uint8_t data_source;
+  uint32_t line_num;
+  uint32_t echo_num;
+
   for (uint32_t i = 0; i < lds_->lidar_count_; i++) {
     uint32_t handle = i;
-    LidarDevice *lidar = &lds_->lidars_[handle];
-    LidarDataQueue *queue = &lidar->data;
+    lidar = &lds_->lidars_[handle];
+    queue = &lidar->data;
+    data_source = lidar->data_src;
+    line_num = GetLaserLineNumber(lidar->info.type);
+    echo_num = GetEchoNumPerPoint(lidar->raw_data_type);
+    
     if ((kConnectStateSampling != lidar->connect_state) ||
         (queue == nullptr)) {
       continue;
     }
     uint32_t packet_num = lidar->onetime_publish_packets;
-
     StoragePacket storage_packet;
-    LidarDevice *lidar = &lds_->lidars_[handle];
     if (GetPublishStartTime(lidar, queue, &last_timestamp, &storage_packet)) {
       /* the remaning packets in queue maybe not enough after skip */
       return 0;
@@ -559,9 +569,14 @@ uint32_t Lddc::PublishAggregatePointcloudData() {
       ++agg_published_packet;
       last_timestamp = timestamp;
     }
+    if (!lidar->data_is_pubulished) {
+      lidar->data_is_pubulished = true;
+    }
+    published_packet = 0;
   }
-  avg_timestamp /= agg_published_packet 
+  avg_timestamp /= agg_published_packet;
   cloud->header.stamp = avg_timestamp / 1000.0;
+  std::cout<<"packet points is "<< cloud->width<<std::endl;
 
   ros::Publisher *p_publisher = Lddc::GetAggPublisher();
   if (kOutputToRos == output_type_) {
@@ -571,9 +586,6 @@ uint32_t Lddc::PublishAggregatePointcloudData() {
       bag_->write(p_publisher->getTopic(), ros::Time(avg_timestamp / 1000000000.0),
           cloud);
     }
-  }
-  if (!lidar->data_is_pubulished) {
-    lidar->data_is_pubulished = true;
   }
   return published_packet;
 }
@@ -664,6 +676,7 @@ void Lddc::PollingAggregateLidarPointCloudData() {
 
   while (!QueueIsEmpty(p_queue)) {
     uint32_t used_size = QueueUsedSize(p_queue);
+    uint32_t onetime_publish_packets = lidar->onetime_publish_packets;
     if (used_size < onetime_publish_packets) {
       break;
     }

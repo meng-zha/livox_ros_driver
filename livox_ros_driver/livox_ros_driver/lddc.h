@@ -54,7 +54,7 @@ class Lddc {
   int RegisterLds(Lds *lds);
   void DistributeLidarData(void);
   void AggregateLidarData(void);
-  void AggregateLidarPointCloudData(void);
+  void AggregateLidarPointCloudData(const std_msgs::String::ConstPtr& msg);
   void CreateBagFile(const std::string &file_name);
   void PrepareExit(void);
 
